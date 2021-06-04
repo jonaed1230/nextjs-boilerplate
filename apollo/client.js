@@ -1,10 +1,35 @@
 import React from 'react'
 import Head from 'next/head'
 import { ApolloProvider } from '@apollo/react-hooks'
-import { ApolloClient } from 'apollo-client'
-import { InMemoryCache } from 'apollo-cache-inmemory'
+import { ApolloClient, InMemoryCache } from '@apollo/client';
+import { split, HttpLink } from '@apollo/client';
+import { getMainDefinition } from '@apollo/client/utilities';
+import { WebSocketLink } from '@apollo/client/link/ws';
 
 let apolloClient = null
+
+const httpLink = new HttpLink({
+  uri: 'http://localhost:3000/api'
+});
+
+const wsLink = process.browser ? new WebSocketLink({
+  uri: 'ws://localhost:3000/api/ws',
+  options: {
+    reconnect: true,
+  }
+}) : null;
+
+const splitLink = process.browser ? split(
+  ({ query }) => {
+    const definition = getMainDefinition(query);
+    return (
+      definition.kind === 'OperationDefinition' &&
+      definition.operation === 'subscription'
+    );
+  },
+  wsLink,
+  httpLink,
+) : httpLink;
 
 /**
  * Creates and provides the apolloContext
@@ -126,15 +151,15 @@ function createApolloClient(initialState = {}) {
 
   return new ApolloClient({
     ssrMode,
-    link: createIsomorphLink(),
+    link: splitLink,
     cache,
   })
 }
 
-function createIsomorphLink() {
-  const { HttpLink } = require('apollo-link-http')
-  return new HttpLink({
-    uri: 'http://localhost:3000/api',
-    credentials: 'same-origin',
-  })
-}
+// function createIsomorphLink() {
+//   const { HttpLink } = require('apollo-link-http')
+//   return new HttpLink({
+//     uri: 'http://localhost:3000/api',
+//     credentials: 'same-origin',
+//   })
+// }

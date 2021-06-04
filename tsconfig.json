@@ -6,6 +6,10 @@
       If you need to change it, you should use the --compiler-options or provide a separate 
       tsconfig.json entirely.
     */
+    "baseUrl": ".",
+    "paths": {
+      "@/api/*": ["pages/api/*"],
+    },
     "module": "commonjs",
     "target": "ES2019",
     "lib": [
